@@ -3,7 +3,7 @@ function errcho() {
 }
 
 function set_scaling_governor() {
-    GOVERNOR=$1
+    local GOVERNOR=$1
     if [ ${GOVERNOR} != "performance" -a ${GOVERNOR} != "ondemand" ]; then
         errcho "Invalid governor: ${GOVERNOR}"
         exit 255
@@ -12,20 +12,30 @@ function set_scaling_governor() {
     echo ${GOVERNOR} > /sys/devices/system/cpu/cpufreq/policy1/scaling_governor
 }
 
+function _set_max_scaling_freq_raw() {
+    echo "Setting scaling_max_freq to ${1}"
+    echo ${1} > /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq
+    echo ${1} > /sys/devices/system/cpu/cpufreq/policy1/scaling_max_freq
+}
+
 function set_scaling_max_freq() {
-    MAX_FREQ="${1}000"
-    if [ $# -eq 2 ]; then
-        INIT_FREQ="${1}000"
-        MAX_FREQ="${2}000"
-        echo "Setting initial scaling_max_freq to ${INIT_FREQ}"
-        echo ${INIT_FREQ} > /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq
-        echo ${INIT_FREQ} > /sys/devices/system/cpu/cpufreq/policy1/scaling_max_freq
-        sleep 1
+    local MBW=
+    if [ $1 == "M" ]; then
+        MBW="quick_mbw"
+        shift 1
     fi
 
-    echo "Setting scaling_max_freq to ${MAX_FREQ}"
-    echo ${MAX_FREQ} > /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq
-    echo ${MAX_FREQ} > /sys/devices/system/cpu/cpufreq/policy1/scaling_max_freq
+    _set_max_scaling_freq_raw "${1}000"
+    echo_cur_freq
+    ${MBW}
+
+    shift 1
+    for freq in "$@"; do
+        sleep 1
+        _set_max_scaling_freq_raw "${freq}000"
+        echo_cur_freq
+        ${MBW}
+    done
 }
 
 function echo_cur_freq() {
