@@ -49,5 +49,5 @@ function time_xz() {
 }
 
 function quick_mbw() {
-    ${BIN_DIR}/mbw -q 1 | grep -E "^AVG"
+    ${BIN_DIR}/mbw -q 16 | grep -E "^AVG"
 }
